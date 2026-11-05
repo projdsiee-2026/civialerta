@@ -1,4 +1,6 @@
 import { getLang, LANG_INSTRUCTION } from "@/lib/i18n";
+import { isStaticHosting } from "@/lib/hosting";
+import { StaticAssistantNotice } from "@/components/static-assistant-notice";
 import { useEffect, useMemo, useRef } from "react";
 import { createFileRoute, useHydrated } from "@tanstack/react-router";
 import { useChat } from "@ai-sdk/react";
@@ -9,9 +11,18 @@ import { TEMP_BG, tempBand } from "@/lib/weather-data";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import agente from "@/assets/agente-alerta.png";
-import { Conversation, ConversationContent, ConversationScrollButton } from "@/components/ai-elements/conversation";
+import {
+  Conversation,
+  ConversationContent,
+  ConversationScrollButton,
+} from "@/components/ai-elements/conversation";
 import { Message, MessageContent, MessageResponse } from "@/components/ai-elements/message";
-import { PromptInput, PromptInputFooter, PromptInputSubmit, PromptInputTextarea } from "@/components/ai-elements/prompt-input";
+import {
+  PromptInput,
+  PromptInputFooter,
+  PromptInputSubmit,
+  PromptInputTextarea,
+} from "@/components/ai-elements/prompt-input";
 import { Shimmer } from "@/components/ai-elements/shimmer";
 import { ensureThread, saveMessages } from "@/lib/chat-threads";
 import { LEVEL_INFO, TEMPLATES } from "@/lib/alerts";
@@ -21,7 +32,10 @@ export const Route = createFileRoute("/assistente/$threadId")({
   head: () => ({
     meta: [
       { title: "Conversa — Assistente IA · Alerta Civil Inteligente" },
-      { name: "description", content: "Converse com a assistente de IA sobre alertas e segurança." },
+      {
+        name: "description",
+        content: "Converse com a assistente de IA sobre alertas e segurança.",
+      },
       { property: "og:title", content: "Assistente IA — Alerta Civil Inteligente" },
       { property: "og:description", content: "Tire dúvidas sobre alertas, chuva e enchentes." },
       { property: "og:type", content: "website" },
@@ -35,7 +49,9 @@ export const Route = createFileRoute("/assistente/$threadId")({
 function ThreadPage() {
   const { threadId } = Route.useParams();
   const hydrated = useHydrated();
-  if (!hydrated) return <p className="p-8 text-center text-muted-foreground">Carregando conversa…</p>;
+  if (isStaticHosting) return <StaticAssistantNotice />;
+  if (!hydrated)
+    return <p className="p-8 text-center text-muted-foreground">Carregando conversa…</p>;
   return <ChatWindow key={threadId} threadId={threadId} />;
 }
 
@@ -51,7 +67,9 @@ function stationContext(s: StationState): string {
   if (status.offline) return "A estação está SEM COMUNICAÇÃO. Os dados estão indisponíveis.";
   const r = s.readings;
   const alerts = status.active.length
-    ? status.active.map((a) => `- ${TEMPLATES[a.type].titulo}: nível ${a.level} (${LEVEL_INFO[a.level].nome})`).join("\n")
+    ? status.active
+        .map((a) => `- ${TEMPLATES[a.type].titulo}: nível ${a.level} (${LEVEL_INFO[a.level].nome})`)
+        .join("\n")
     : "- Nenhum alerta ativo (nível 1, informativo).";
   const leituras = r
     ? `Temperatura ${r.temperatura} °C, umidade ${r.umidade}%, pressão ${r.pressao} hPa, UV ${r.uv}, qualidade do ar ${r.qualidadeAr} ppm, vento ${r.ventoVelocidade} km/h, chuva ${r.chuva} mm/h, nível da água ${r.nivelAgua} cm.`
@@ -82,7 +100,9 @@ function WeatherToolPart({ part }: { part: ToolUIPart }) {
       />
       <ToolContent>
         <div className="p-4">
-          {part.state === "output-error" && <p className="text-sm text-destructive">{part.errorText}</p>}
+          {part.state === "output-error" && (
+            <p className="text-sm text-destructive">{part.errorText}</p>
+          )}
           {out?.erro && <p className="text-sm text-muted-foreground">{out.erro}</p>}
           {out && !out.erro && typeof out.temperatura === "number" && (
             <div className="flex items-center gap-4">
@@ -101,14 +121,22 @@ function WeatherToolPart({ part }: { part: ToolUIPart }) {
                 </p>
                 <p className="text-muted-foreground">{out.condicao}</p>
                 <p className="mt-1 flex flex-wrap gap-3 text-xs">
-                  <span className="flex items-center gap-1"><Thermometer className="size-3.5" /> {Math.round(out.sensacao ?? 0)}°</span>
-                  <span className="flex items-center gap-1"><Droplets className="size-3.5" /> {out.umidade}%</span>
-                  <span className="flex items-center gap-1"><Wind className="size-3.5" /> {Math.round(out.vento_kmh ?? 0)} km/h</span>
+                  <span className="flex items-center gap-1">
+                    <Thermometer className="size-3.5" /> {Math.round(out.sensacao ?? 0)}°
+                  </span>
+                  <span className="flex items-center gap-1">
+                    <Droplets className="size-3.5" /> {out.umidade}%
+                  </span>
+                  <span className="flex items-center gap-1">
+                    <Wind className="size-3.5" /> {Math.round(out.vento_kmh ?? 0)} km/h
+                  </span>
                 </p>
               </div>
             </div>
           )}
-          {!out && part.state !== "output-error" && <p className="text-sm text-muted-foreground">Consultando…</p>}
+          {!out && part.state !== "output-error" && (
+            <p className="text-sm text-muted-foreground">Consultando…</p>
+          )}
         </div>
       </ToolContent>
     </Tool>
@@ -126,7 +154,10 @@ function ChatWindow({ threadId }: { threadId: string }) {
     () =>
       new DefaultChatTransport<UIMessage>({
         api: "/api/chat",
-        body: () => ({ threadId, context: `${stationContext(stationRef.current)}\n${LANG_INSTRUCTION[getLang()]}` }),
+        body: () => ({
+          threadId,
+          context: `${stationContext(stationRef.current)}\n${LANG_INSTRUCTION[getLang()]}`,
+        }),
       }),
     [threadId],
   );
@@ -138,8 +169,14 @@ function ChatWindow({ threadId }: { threadId: string }) {
     onError: (err) => {
       const msg = err.message || "";
       if (/402|crédit/i.test(msg)) toast.error("Os créditos de IA acabaram.");
-      else if (/429|Muitas/i.test(msg)) toast.error("Muitas perguntas ao mesmo tempo. Aguarde e tente de novo.");
-      else toast.error(msg.length < 160 && msg ? msg : "Não foi possível falar com a assistente. Verifique sua conexão.");
+      else if (/429|Muitas/i.test(msg))
+        toast.error("Muitas perguntas ao mesmo tempo. Aguarde e tente de novo.");
+      else
+        toast.error(
+          msg.length < 160 && msg
+            ? msg
+            : "Não foi possível falar com a assistente. Verifique sua conexão.",
+        );
     },
   });
 
@@ -169,7 +206,9 @@ function ChatWindow({ threadId }: { threadId: string }) {
         <img src={agente} alt="" width={40} height={40} className="size-10" />
         <div>
           <p className="font-display font-bold">Gota · Assistente do Alerta Civil</p>
-          <p className="text-xs text-muted-foreground">Responde dúvidas sobre tempo, alertas e segurança</p>
+          <p className="text-xs text-muted-foreground">
+            Responde dúvidas sobre tempo, alertas e segurança
+          </p>
         </div>
       </div>
 
@@ -177,10 +216,18 @@ function ChatWindow({ threadId }: { threadId: string }) {
         <ConversationContent className="mx-auto w-full max-w-3xl">
           {messages.length === 0 && (
             <div className="flex flex-col items-center gap-4 py-10 text-center">
-              <img src={agente} alt="Gota, a assistente" width={112} height={112} className="size-28" />
+              <img
+                src={agente}
+                alt="Gota, a assistente"
+                width={112}
+                height={112}
+                className="size-28"
+              />
               <div>
                 <h1 className="text-2xl font-black">Olá! Eu sou a Gota.</h1>
-                <p className="text-muted-foreground">Pergunte o que fazer em caso de chuva, enchente, vento ou calor.</p>
+                <p className="text-muted-foreground">
+                  Pergunte o que fazer em caso de chuva, enchente, vento ou calor.
+                </p>
               </div>
               <div className="grid w-full gap-2 sm:grid-cols-2">
                 {SUGGESTIONS.map((q) => (
@@ -204,7 +251,9 @@ function ChatWindow({ threadId }: { threadId: string }) {
                     return m.role === "assistant" ? (
                       <MessageResponse key={i}>{part.text}</MessageResponse>
                     ) : (
-                      <p key={i} className="whitespace-pre-wrap">{part.text}</p>
+                      <p key={i} className="whitespace-pre-wrap">
+                        {part.text}
+                      </p>
                     );
                   }
                   if (part.type === "tool-consultar_tempo") {

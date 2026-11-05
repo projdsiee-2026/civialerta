@@ -7,11 +7,19 @@
 import { defineConfig } from "@lovable.dev/vite-tanstack-config";
 import { liveVoiceDev } from "./live-vite-plugin";
 
+const githubPages = process.env["CIVIALERTA_GITHUB_PAGES"] === "true";
+
 export default defineConfig({
+  nitro: githubPages ? false : true,
   tanstackStart: {
+    ...(githubPages ? { spa: { enabled: true } } : {}),
     // Redirect TanStack Start's bundled server entry to src/server.ts (our SSR error wrapper).
     // nitro/vite builds from this
     server: { entry: "server" },
   },
-  vite: { plugins: [liveVoiceDev()] },
+  vite: {
+    base: githubPages ? "/civialerta/" : "/",
+    define: { "import.meta.env.VITE_STATIC_HOST": JSON.stringify(githubPages ? "true" : "false") },
+    plugins: [liveVoiceDev()],
+  },
 });

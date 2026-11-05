@@ -2,7 +2,12 @@
 
 Aplicação de monitoramento meteorológico escolar de Paranaguá, construída com React, TypeScript, TanStack Start, Vite e Tailwind CSS.
 
-[**Acessar o site**](https://civialerta-projetos-ds.boomingecho4.chatgpt.site)
+## Duas versões publicadas
+
+- [Versão completa — Sites](https://civialerta-projetos-ds.boomingecho4.chatgpt.site): mantém o servidor de IA e voz, que dependem da chave.
+- [Versão estática — GitHub Pages](https://projdsiee-2026.github.io/civialerta/): painel, histórico, administração local e clima direto do Open-Meteo. Não executa o servidor de IA/voz.
+
+As duas versões têm o mesmo visual e os sensores simulados. Os dados salvos pertencem ao navegador e ao endereço de cada versão.
 
 ## Equipe
 
@@ -22,16 +27,16 @@ Aplicação de monitoramento meteorológico escolar de Paranaguá, construída c
 
 O HTML é gerado pelos componentes React. Este projeto não usa um arquivo `index.html` para abrir com duplo clique ou Live Server.
 
-| O que editar | Arquivo |
-| --- | --- |
-| Estrutura HTML e layout global | `src/routes/__root.tsx` |
-| Página inicial / painel | `src/routes/index.tsx` |
-| Menu e marca | `src/components/site-header.tsx` |
-| Cores, fontes e estilos | `src/styles.css` |
-| Imagens | `src/assets/` e `public/` |
-| Regras de alerta | `src/lib/alerts.ts` |
-| Simulação e armazenamento local | `src/lib/station-store.ts` |
-| API do assistente | `src/routes/api/chat.ts` e `src/lib/ai/` |
+| O que editar                    | Arquivo                                  |
+| ------------------------------- | ---------------------------------------- |
+| Estrutura HTML e layout global  | `src/routes/__root.tsx`                  |
+| Página inicial / painel         | `src/routes/index.tsx`                   |
+| Menu e marca                    | `src/components/site-header.tsx`         |
+| Cores, fontes e estilos         | `src/styles.css`                         |
+| Imagens                         | `src/assets/` e `public/`                |
+| Regras de alerta                | `src/lib/alerts.ts`                      |
+| Simulação e armazenamento local | `src/lib/station-store.ts`               |
+| API do assistente               | `src/routes/api/chat.ts` e `src/lib/ai/` |
 
 ## Executar no VS Code
 
@@ -57,6 +62,14 @@ Os sensores são simulados. As configurações e o histórico ficam no localStor
 
 ## Configurar a IA (opcional)
 
+**ONDE INSERIR A CHAVE DA LOVABLE:**
+
+1. No computador, copie `.env.example` para `.env` na raiz (ao lado do `package.json`).
+2. Somente no `.env`, preencha `LOVABLE_API_KEY=SUA_CHAVE_AQUI` com a chave real e reinicie `npm run dev`.
+3. Na versão completa publicada, crie o segredo `LOVABLE_API_KEY` no painel da hospedagem Sites.
+
+O ponto de leitura da chave está comentado em `src/lib/ai/chat.server.ts`; a voz lê a mesma variável em `src/lib/live-relay.server.ts`. **Não cole a chave nos arquivos de código, neste README, no `.env.example` ou no GitHub Pages.** O Pages é público e não tem servidor para guardar segredos. Não crie `VITE_LOVABLE_API_KEY`.
+
 Copie `.env.example` para `.env` e configure `LOVABLE_API_KEY` no servidor, com uma chave válida autorizada para o gateway Lovable. Reinicie o servidor após configurar. Sem essa chave, o painel e a simulação funcionam, mas o chat e a voz não respondem.
 
 Nunca coloque a chave em componentes React, em variáveis `VITE_*` ou no GitHub. O `.env` está ignorado pelo Git. Na hospedagem, use o painel de segredos do servidor.
@@ -71,11 +84,12 @@ O arquivo `src/assets/logo-instituto.png.asset.json` contém apenas metadados da
 npm test
 npm run typecheck
 npm run build
+npm run build:pages
 ```
 
 O build preserva o servidor Nitro e prepara `dist/server` e `dist/client` para a hospedagem. A configuração fica em `.openai/hosting.json`. O `.npmrc` mantém a resolução de dependências usada na versão verificada. O GitHub Actions executa os testes, o TypeScript e o build.
 
-Este aplicativo usa renderização no servidor e rotas de API. GitHub guarda o código; GitHub Pages sozinho não executa o chat, as funções de clima e o relay de voz. A hospedagem precisa suportar o resultado do build TanStack/Nitro e conexões WebSocket para voz.
+`npm run build` prepara a versão completa com servidor. `npm run build:pages` gera `.pages/`, com HTML, CSS e JavaScript estáticos, base `/civialerta/` e páginas de entrada para as rotas. Nesta versão, o clima é consultado diretamente no navegador, sem chave; IA e voz exibem uma mensagem de indisponibilidade. Nunca envie a pasta do servidor ao GitHub Pages.
 
 ## Projeto original
 

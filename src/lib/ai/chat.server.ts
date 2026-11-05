@@ -11,7 +11,10 @@ const weatherTools = {
     inputSchema: z
       .object({
         cidade: z.string().describe("Nome da cidade brasileira, ex.: Curitiba"),
-        estado: z.string().nullable().describe("Estado ou sigla (ex.: Paraná ou PR), ou null se não informado"),
+        estado: z
+          .string()
+          .nullable()
+          .describe("Estado ou sigla (ex.: Paraná ou PR), ou null se não informado"),
       })
       .strict(),
     execute: async ({ cidade, estado }) => {
@@ -70,6 +73,10 @@ Como responder:
 - Se a pergunta não tiver relação com tempo, clima, segurança ou o sistema, responda brevemente e com educação, e traga a conversa de volta ao tema.`;
 
 export async function handleChat(request: Request): Promise<Response> {
+  // CONFIGURAR A CHAVE AQUI: este código LÊ LOVABLE_API_KEY do servidor.
+  // Local: copie .env.example para .env na raiz e preencha LOVABLE_API_KEY.
+  // Produção (Sites): cadastre LOVABLE_API_KEY no painel de segredos da hospedagem.
+  // NÃO cole a chave neste arquivo, em VITE_* ou no GitHub Pages.
   const apiKey = process.env["LOVABLE_API_KEY"];
   if (!apiKey) {
     return Response.json({ error: "A assistente não está configurada." }, { status: 500 });
