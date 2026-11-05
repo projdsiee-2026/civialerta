@@ -8,6 +8,7 @@ const NAV = [
   { to: "/historico", label: "nav.historico" },
   { to: "/assistente", label: "nav.assistente" },
   { to: "/voz", label: "nav.voz" },
+  { to: "/equipe", label: "nav.equipe" },
   { to: "/admin", label: "nav.admin" },
 ] as const satisfies readonly { to: string; label: TKey }[];
 

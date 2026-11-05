@@ -1,23 +1,21 @@
 import { createOpenAI } from "@ai-sdk/openai";
 import { stepCountIs, streamText, tool, type ModelMessage } from "ai";
-import process from "node:process";
 import { z } from "zod";
 import { fetchCurrentWeather, geocodeBrazil } from "./weather.server";
 import { describeWeather } from "./weather-data";
+import { getOpenAIConfig } from "./ai/config.server";
 
 export type LiveConfig = {
   baseURL: string;
   key: string;
   liveModel: string;
   backendModel: string;
+  voice?: string;
   openingInstructions?: string;
 };
 
-// Fill from co-loaded knowledge: the gateway URL, the Live model and the resolved chat model.
+// Direct OpenAI API; the key stays in config.server.ts and server secrets.
 const liveSettings = {
-  baseURL: "https://ai.gateway.lovable.dev",
-  liveModel: "openai/gpt-live-1",
-  backendModel: "openai/gpt-6-astra",
   openingInstructions:
     "Comece agora em português do Brasil. Diga: Olá, eu sou a Gota, a assistente de voz do Alerta Civil Inteligente. Pode me perguntar sobre o tempo ou o que fazer em chuva forte, enchente ou vento. Depois escute.",
 };
@@ -60,11 +58,14 @@ type ProviderEvent = {
 };
 
 export function getLiveConfig(): LiveConfig {
+  const openai = getOpenAIConfig();
   const config: LiveConfig = {
     ...liveSettings,
-    // CHAVE DA LOVABLE: preencha LOVABLE_API_KEY no .env local ou nos segredos
-    // da hospedagem com servidor. Nunca coloque o valor no código/Pages.
-    key: process.env["LOVABLE_API_KEY"] ?? "",
+    baseURL: openai.baseURL,
+    liveModel: openai.liveModel,
+    backendModel: openai.chatModel,
+    voice: openai.voice,
+    key: openai.apiKey,
   };
   if ([config.baseURL, config.key, config.liveModel, config.backendModel].some((value) => !value)) {
     throw new Error("Missing Live relay configuration");
@@ -77,9 +78,10 @@ function gatewayAPIBase(baseURL: string) {
 }
 
 async function gatewayRejection(response: Response) {
-  const body = (await response.json().catch(() => null)) as { message?: unknown } | null;
-  const message = typeof body?.message === "string" ? body.message.slice(0, 300) : "";
-  return new Error(message || `Voice gateway rejected the connection (${response.status})`);
+  if (response.status === 401 || response.status === 403)
+    return new Error("O responsável precisa verificar a chave da OpenAI.");
+  if (response.status === 429) return new Error("A OpenAI atingiu o limite de uso ou de créditos.");
+  return new Error(`O serviço de voz da OpenAI está indisponível (${response.status}).`);
 }
 
 export function validateLiveUpgrade(
@@ -109,10 +111,54 @@ function workerSocket(socket: WorkerSocket): LiveSocket {
   };
 }
 
+export async function createOpenAILiveSession(
+  config: LiveConfig,
+  sdp: string,
+  signal: AbortSignal,
+) {
+  const response = await fetch(`${gatewayAPIBase(config.baseURL)}/live/sessions`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${config.key}`, "Content-Type": "application/json" },
+    signal,
+    body: JSON.stringify({
+      session: {
+        model: config.liveModel,
+        instructions: conversationInstructions,
+        audio: { output: { voice: config.voice ?? "marin" } },
+        delegation: { type: "client" },
+        client: {
+          data_channel: { allowed_client_events: [], allowed_server_events: ["session.started"] },
+        },
+      },
+      transport: { type: "webrtc", sdp },
+    }),
+  });
+  if (!response.ok) throw await gatewayRejection(response);
+  const result = (await response.json()) as {
+    session?: { id?: unknown };
+    transport?: { type?: unknown; sdp?: unknown };
+  };
+  if (
+    typeof result.session?.id !== "string" ||
+    !result.session.id ||
+    result.transport?.type !== "webrtc" ||
+    typeof result.transport.sdp !== "string" ||
+    !result.transport.sdp
+  ) {
+    throw new Error("A OpenAI não retornou uma sessão de voz válida.");
+  }
+  return { id: result.session.id, sdp: result.transport.sdp };
+}
+
 export function handleLiveRequest(request: Request): Response {
   const waitUntil = (request as Request & Partial<LiveExecutionContext>).waitUntil;
   if (!waitUntil) return new Response("Live runtime unavailable", { status: 503 });
-  const config = getLiveConfig();
+  let config: LiveConfig;
+  try {
+    config = getLiveConfig();
+  } catch {
+    return new Response("Configure OPENAI_API_KEY nos segredos do servidor.", { status: 503 });
+  }
   const rejected = validateLiveUpgrade(request);
   if (rejected) return rejected;
   const pair = new WebSocketPair();
@@ -166,7 +212,6 @@ function isListeningSound(text: string) {
 async function answerQuestion(
   messages: ModelMessage[],
   config: LiveConfig,
-  correlation: { runID: string; sessionID: string | undefined; delegationID: string },
   signal: AbortSignal,
   consumeInput: () => void,
   onPlan: (plan: ReturnType<typeof planStudySchedule>) => void,
@@ -175,10 +220,6 @@ async function answerQuestion(
   const provider = createOpenAI({
     baseURL: gatewayAPIBase(config.baseURL),
     apiKey: config.key,
-    headers: {
-      "Lovable-API-Key": config.key,
-      "X-Lovable-AIG-SDK": "vercel-ai-sdk",
-    },
   });
   let responseCursor = 0;
   consumeInput();
@@ -196,19 +237,11 @@ async function answerQuestion(
       messages.push(...step.response.messages.slice(responseCursor));
       responseCursor = step.response.messages.length;
     },
-    headers: {
-      "X-Lovable-AIG-Run-ID": correlation.runID,
-      "X-Lovable-AIG-Metadata": JSON.stringify({
-        live_session_id: correlation.sessionID,
-        delegation_id: correlation.delegationID,
-      }),
-    },
     providerOptions: {
       openai: {
         store: false,
-        ...(config.backendModel !== "openai/chat-latest"
+        ...(config.backendModel !== "chat-latest"
           ? {
-              forceReasoning: true,
               reasoningEffort: "medium",
               reasoningSummary: "auto",
               include: ["reasoning.encrypted_content"],
@@ -320,7 +353,6 @@ export function bindLiveConnection(
   connect: LiveConnector,
 ): void {
   const config = { ...configuration };
-  const runID = crypto.randomUUID();
   const setupAbort = new AbortController();
   let gateway: LiveSocket | undefined;
   let sessionID: string | undefined;
@@ -496,7 +528,6 @@ export function bindLiveConnection(
       const answer = await answerQuestion(
         backendMessages,
         config,
-        { runID, sessionID, delegationID: id },
         controller.signal,
         () => {
           const updates = transcripts.slice(transcriptCursor);
@@ -648,13 +679,13 @@ export function bindLiveConnection(
       emit({ type: "app.error", error: { message: "Voice startup timed out" } });
       stop();
     }, 40_000);
+    const session = await createOpenAILiveSession(config, sdp, setupAbort.signal);
+    sessionID = session.id;
+    // WebRTC creation already starts the session. Attach the trusted server
+    // for weather delegation; never send session.start on this sideband.
     const accepted = await connect(
-      new URL(`${gatewayAPIBase(config.baseURL)}/live/sessions`).href,
-      {
-        "Lovable-API-Key": config.key,
-        "X-Lovable-AIG-SDK": "fetch",
-        "X-Lovable-AIG-Run-ID": runID,
-      },
+      `${gatewayAPIBase(config.baseURL)}/live/sessions/${encodeURIComponent(session.id)}/attach`,
+      { Authorization: `Bearer ${config.key}` },
       setupAbort.signal,
     );
     if (closing || browser.readyState !== 1) {
@@ -665,21 +696,20 @@ export function bindLiveConnection(
     gateway.onMessage(receiveGateway);
     gateway.onClose(finish);
     gateway.onError(() => {
-      emit({ type: "app.error", error: { message: "Voice gateway connection failed" } });
+      emit({
+        type: "app.error",
+        error: { message: "A conexão com a voz da OpenAI foi interrompida." },
+      });
       stop();
     });
-    gateway.send(
-      JSON.stringify({
-        type: "session.start",
-        session: {
-          model: config.liveModel,
-          instructions: conversationInstructions,
-          audio: { output: { voice: "bossa" } },
-          delegation: { type: "client" },
-        },
-        transport: { type: "webrtc", sdp },
-      }),
-    );
+    clearTimeout(startupTimer);
+    // App control event, not an OpenAI gateway event. Only SDP + session ID
+    // are returned to the browser; the API key never leaves this server.
+    emit({
+      type: "gateway.session.created",
+      session: { id: session.id },
+      transport: { type: "webrtc", sdp: session.sdp },
+    });
   }
 
   browser.onMessage((data) => {
@@ -720,7 +750,8 @@ export function bindLiveConnection(
         throw new Error("Unsupported client event");
       }
       if (gateway.readyState !== 1) return stop();
-      gateway.send(data);
+      // Heartbeats belong to this app's control socket, not the OpenAI API.
+      emit({ type: "gateway.heartbeat.ack" });
     } catch {
       emit({
         type: "app.error",

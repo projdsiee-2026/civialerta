@@ -56,10 +56,19 @@ const DICT = {
   "nav.assistente": { pt: "Assistente IA", en: "AI Assistant", es: "Asistente IA" },
   "nav.voz": { pt: "Falar por voz", en: "Voice", es: "Hablar por voz" },
   "nav.admin": { pt: "Administração", en: "Admin", es: "Administración" },
-  "header.sub": { pt: "Estação meteorológica · Paranaguá", en: "Weather station · Paranaguá", es: "Estación meteorológica · Paranaguá" },
+  "nav.equipe": { pt: "Equipe", en: "Team", es: "Equipo" },
+  "header.sub": {
+    pt: "Estação meteorológica · Paranaguá",
+    en: "Weather station · Paranaguá",
+    es: "Estación meteorológica · Paranaguá",
+  },
   "lang.label": { pt: "Idioma", en: "Language", es: "Idioma" },
 
-  "home.sensores": { pt: "Sensores da estação", en: "Station sensors", es: "Sensores de la estación" },
+  "home.sensores": {
+    pt: "Sensores da estação",
+    en: "Station sensors",
+    es: "Sensores de la estación",
+  },
   "home.simulados": {
     pt: "Dados simulados até a estação Arduino ser conectada · atualiza a cada 3 s",
     en: "Simulated data until the Arduino station is connected · updates every 3 s",
@@ -77,14 +86,22 @@ const DICT = {
     en: "Ask the AI assistant what to do in heavy rain, floods or strong wind.",
     es: "Pregunte a la asistente de IA qué hacer con lluvia fuerte, inundación o viento.",
   },
-  "home.falar": { pt: "Falar com a assistente", en: "Talk to the assistant", es: "Hablar con la asistente" },
+  "home.falar": {
+    pt: "Falar com a assistente",
+    en: "Talk to the assistant",
+    es: "Hablar con la asistente",
+  },
   "home.emergencia": {
     pt: "Emergência: Defesa Civil 199 · Bombeiros 193 · SAMU 192",
     en: "Emergency: Civil Defense 199 · Firefighters 193 · Ambulance (SAMU) 192",
     es: "Emergencia: Defensa Civil 199 · Bomberos 193 · SAMU 192",
   },
 
-  "br.titulo": { pt: "Tempo no Brasil agora", en: "Weather in Brazil now", es: "El tiempo en Brasil ahora" },
+  "br.titulo": {
+    pt: "Tempo no Brasil agora",
+    en: "Weather in Brazil now",
+    es: "El tiempo en Brasil ahora",
+  },
   "br.sub": {
     pt: "capitais e grandes cidades · atualizado às",
     en: "capitals and major cities · updated at",
@@ -96,8 +113,16 @@ const DICT = {
     es: "datos de Open-Meteo (no son alertas oficiales)",
   },
   "br.atualizar": { pt: "Atualizar", en: "Refresh", es: "Actualizar" },
-  "br.erro": { pt: "Não foi possível carregar o tempo agora.", en: "Could not load the weather right now.", es: "No se pudo cargar el tiempo ahora." },
-  "br.erroDica": { pt: "Tente atualizar em alguns minutos.", en: "Try again in a few minutes.", es: "Intente de nuevo en unos minutos." },
+  "br.erro": {
+    pt: "Não foi possível carregar o tempo agora.",
+    en: "Could not load the weather right now.",
+    es: "No se pudo cargar el tiempo ahora.",
+  },
+  "br.erroDica": {
+    pt: "Tente atualizar em alguns minutos.",
+    en: "Try again in a few minutes.",
+    es: "Intente de nuevo en unos minutos.",
+  },
   "br.mostrar": { pt: "Mostrar no mapa", en: "Show on map", es: "Mostrar en el mapa" },
   "layer.temperatura": { pt: "Temperatura", en: "Temperature", es: "Temperatura" },
   "layer.chuva": { pt: "Chuva hoje", en: "Rain today", es: "Lluvia hoy" },
@@ -108,8 +133,16 @@ const DICT = {
   "br.cidade": { pt: "Cidade", en: "City", es: "Ciudad" },
   "br.sensacao": { pt: "Sensação", en: "Feels like", es: "Sensación" },
   "br.chuvaAgora": { pt: "Chuva agora", en: "Rain now", es: "Lluvia ahora" },
-  "br.previsao": { pt: "Previsão dos próximos dias", en: "Forecast for the next days", es: "Pronóstico de los próximos días" },
-  "br.toque": { pt: "Toque em uma cidade no mapa para ver os detalhes.", en: "Tap a city on the map to see details.", es: "Toque una ciudad en el mapa para ver los detalles." },
+  "br.previsao": {
+    pt: "Previsão dos próximos dias",
+    en: "Forecast for the next days",
+    es: "Pronóstico de los próximos días",
+  },
+  "br.toque": {
+    pt: "Toque em uma cidade no mapa para ver os detalhes.",
+    en: "Tap a city on the map to see details.",
+    es: "Toque una ciudad en el mapa para ver los detalles.",
+  },
   "br.maisQuentes": { pt: "Mais quentes", en: "Hottest", es: "Más calurosas" },
   "br.maisFrias": { pt: "Mais frias", en: "Coldest", es: "Más frías" },
   "br.maisChuva": { pt: "Mais chuva hoje", en: "Most rain today", es: "Más lluvia hoy" },

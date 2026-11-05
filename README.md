@@ -9,6 +9,12 @@ Aplicação de monitoramento meteorológico escolar de Paranaguá, construída c
 
 As duas versões têm o mesmo visual e os sensores simulados. Os dados salvos pertencem ao navegador e ao endereço de cada versão.
 
+## Versão com servidor e OpenAI
+
+Esta versão usa a OpenAI diretamente no chat e na voz. A versão GitHub Pages permanece na branch main, sem IA. A chave OPENAI_API_KEY não é a chave da Lovable: crie uma chave na sua própria conta da plataforma OpenAI e configure-a nos segredos do servidor. Nenhuma chave vem incluída neste código.
+
+Os modelos padrão são gpt-6-astra (chat e ferramentas) e gpt-live-1 (voz). Eles podem ser configurados por OPENAI_CHAT_MODEL, OPENAI_LIVE_MODEL e OPENAI_VOICE. O uso real depende da disponibilidade e dos créditos da conta da API. Testes automatizados usam provedores simulados e não confirmam acesso da conta aos modelos.
+
 ## Equipe
 
 **Orientador:** ERICK  
@@ -16,12 +22,12 @@ As duas versões têm o mesmo visual e os sensores simulados. Os dados salvos pe
 
 **Alunos:**
 
-- Cristoffer
-- Daniel
-- Beatriz
-- Rafaela
-- João Vitor
-- Felipe
+- Cristoffer — 1ºC Desenvolvimento de Sistemas
+- Daniel — 1ºA Desenvolvimento de Sistemas
+- Beatriz — 1ºA Desenvolvimento de Sistemas
+- Rafaela — 1ºA Desenvolvimento de Sistemas
+- João Vitor — 1ºC Desenvolvimento de Sistemas
+- Fernando — 2º A Administração
 
 ## Onde está o HTML?
 
@@ -62,17 +68,21 @@ Os sensores são simulados. As configurações e o histórico ficam no localStor
 
 ## Configurar a IA (opcional)
 
-**ONDE INSERIR A CHAVE DA LOVABLE:**
+**ONDE INSERIR A CHAVE DA OPENAI:**
 
 1. No computador, copie `.env.example` para `.env` na raiz (ao lado do `package.json`).
-2. Somente no `.env`, preencha `LOVABLE_API_KEY=SUA_CHAVE_AQUI` com a chave real e reinicie `npm run dev`.
-3. Na versão completa publicada, crie o segredo `LOVABLE_API_KEY` no painel da hospedagem Sites.
+2. Somente no `.env`, preencha `OPENAI_API_KEY=SUA_CHAVE_AQUI` com a chave real e reinicie `npm run dev`.
+3. Na versão completa publicada, crie o segredo `OPENAI_API_KEY` no painel da hospedagem Sites.
 
-O ponto de leitura da chave está comentado em `src/lib/ai/chat.server.ts`; a voz lê a mesma variável em `src/lib/live-relay.server.ts`. **Não cole a chave nos arquivos de código, neste README, no `.env.example` ou no GitHub Pages.** O Pages é público e não tem servidor para guardar segredos. Não crie `VITE_LOVABLE_API_KEY`.
+O ponto central de leitura da chave está comentado em `src/lib/ai/config.server.ts`; chat e voz usam essa mesma configuração. **Não cole a chave nos arquivos de código, neste README, no `.env.example` ou no GitHub Pages.** O Pages é público e não tem servidor para guardar segredos. Não crie `VITE_OPENAI_API_KEY`.
 
-Copie `.env.example` para `.env` e configure `LOVABLE_API_KEY` no servidor, com uma chave válida autorizada para o gateway Lovable. Reinicie o servidor após configurar. Sem essa chave, o painel e a simulação funcionam, mas o chat e a voz não respondem.
+Copie `.env.example` para `.env` e configure `OPENAI_API_KEY` no servidor, com uma chave válida autorizada para o API da OpenAI. Reinicie o servidor após configurar. Sem essa chave, o painel e a simulação funcionam, mas o chat e a voz não respondem.
 
 Nunca coloque a chave em componentes React, em variáveis `VITE_*` ou no GitHub. O `.env` está ignorado pelo Git. Na hospedagem, use o painel de segredos do servidor.
+
+## Fotos da equipe
+
+A página /equipe existe somente nesta versão completa. Os nomes e funções ficam em src/lib/team.ts. Para adicionar uma foto autorizada pela equipe, salve o arquivo em public/equipe/ e preencha photo com equipe/nome.jpg. Preencha grade com a série informada. Enquanto não há foto, o cartão mostra as iniciais; série e dados não recebidos não são inventados.
 
 ## Imagens
 

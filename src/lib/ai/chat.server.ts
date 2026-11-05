@@ -1,6 +1,7 @@
 import { convertToModelMessages, tool, type UIMessage } from "ai";
 import { z } from "zod";
 import { createResponsesCall } from "./responses.ts";
+import { getOpenAIConfig } from "./config.server";
 import { fetchCurrentWeather, geocodeBrazil } from "../weather.server";
 import { describeWeather } from "../weather-data";
 
@@ -51,9 +52,6 @@ const weatherTools = {
   }),
 };
 
-const GATEWAY_URL = "https://ai.gateway.lovable.dev/v1";
-const MODEL = "openai/gpt-6-astra";
-
 const BodySchema = z.object({
   threadId: z.string().min(1).max(100),
   context: z.string().max(4000).optional(),
@@ -73,13 +71,16 @@ Como responder:
 - Se a pergunta não tiver relação com tempo, clima, segurança ou o sistema, responda brevemente e com educação, e traga a conversa de volta ao tema.`;
 
 export async function handleChat(request: Request): Promise<Response> {
-  // CONFIGURAR A CHAVE AQUI: este código LÊ LOVABLE_API_KEY do servidor.
-  // Local: copie .env.example para .env na raiz e preencha LOVABLE_API_KEY.
-  // Produção (Sites): cadastre LOVABLE_API_KEY no painel de segredos da hospedagem.
-  // NÃO cole a chave neste arquivo, em VITE_* ou no GitHub Pages.
-  const apiKey = process.env["LOVABLE_API_KEY"];
-  if (!apiKey) {
-    return Response.json({ error: "A assistente não está configurada." }, { status: 500 });
+  // A chave é lida em config.server.ts. Preencha OPENAI_API_KEY no .env local
+  // ou nos segredos da hospedagem Sites; nunca no código ou no GitHub Pages.
+  let config: ReturnType<typeof getOpenAIConfig>;
+  try {
+    config = getOpenAIConfig();
+  } catch {
+    return Response.json(
+      { error: "A assistente ainda não está configurada pelo responsável pelo site." },
+      { status: 503 },
+    );
   }
 
   let body: z.infer<typeof BodySchema>;
@@ -97,7 +98,7 @@ export async function handleChat(request: Request): Promise<Response> {
   const modelMessages = await convertToModelMessages(messages);
   return createResponsesCall(
     request,
-    { baseURL: GATEWAY_URL, apiKey, model: MODEL },
+    { baseURL: config.baseURL, apiKey: config.apiKey, model: config.chatModel },
     modelMessages,
     instructions,
     messages,
