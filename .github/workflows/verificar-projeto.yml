@@ -1,0 +1,44 @@
+name: Verificar projeto
+on: [push, workflow_dispatch]
+permissions:
+  contents: write
+jobs:
+  verificar:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Organizar arquivos enviados
+        id: importar
+        shell: bash
+        run: |
+          if [ -f projeto-fonte.zip ]; then
+            python - <<'PY'
+          from pathlib import Path
+          from zipfile import ZipFile
+          root = Path.cwd().resolve()
+          with ZipFile('projeto-fonte.zip') as archive:
+              for item in archive.infolist():
+                  target = (root / item.filename).resolve()
+                  if not target.is_relative_to(root):
+                      raise ValueError('Caminho inválido no pacote')
+              archive.extractall(root)
+          Path('projeto-fonte.zip').unlink()
+          PY
+            echo "importado=true" >> "$GITHUB_OUTPUT"
+          fi
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - run: npm test
+      - run: npm run typecheck
+      - run: npm run build
+      - name: Salvar estrutura do projeto
+        if: steps.importar.outputs.importado == 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Organizar código-fonte do Civialerta"
+          git push
